@@ -40,7 +40,7 @@ def hough(image):
     # Edges Detection
     # thr1=50, thr2=100, apSize=3, L2Grad=True
     edges = cv.Canny(image, 50, 100, None, 3, True)
-    lines = cv.HoughLines(edges, 1, np.pi/180, 400)
+    lines = cv.HoughLines(edges, 1, np.pi/180, 500)
 
     # Draw the lines
     if lines is not None:
@@ -52,8 +52,8 @@ def hough(image):
             x0 = a * rho
             y0 = b * rho
             # descobrir calculo que acontece aqui pra consertar
-            pt1 = (int(x0 + 4000*(-b)), int(y0 + 4000*(a)))
-            pt2 = (int(x0 - 4000*(-b)), int(y0 - 4000*(a)))
+            pt1 = (int(x0 + 5000*(-b)), int(y0 + 5000*(a)))
+            pt2 = (int(x0 - 5000*(-b)), int(y0 - 5000*(a)))
             cv.line(image, pt1, pt2, (255,255,255), 3)
 
     return image
@@ -111,4 +111,4 @@ def detect_lines(image_file="../imagens/image_01.jpg"):
     cv.destroyAllWindows()
     return 0
 
-detect_lines('../imagens/PCB_01_ilumin_06.jpg')
+detect_lines('../images/PCB_01_ilumin_03.jpg')
