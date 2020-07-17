@@ -161,15 +161,19 @@ def order_points(points):
         top_right = min_h_2
         top_left = min_h_1
 
-    pts = np.uint32([top_left, bottom_left, top_right, bottom_right])
+    pts = np.float32([top_left, bottom_left, top_right, bottom_right])
+    #print(str(pts))
     return pts
 
 # transforma a imagem geometricamente
 # recebe: pontos, imagem
 # retorna: imagem transformada
 def set_perspective(points, image):
-    h = 3100
-    w = 1400
+    # top_left, bottom_left, top_right, bottom_right
+    w = int((points[2][1]-points[0][1] + points[3][1]-points[1][1])/2)
+    h = int((points[1][0]-points[0][0] + points[3][0]-points[2][0])/2)
+    #print(h)
+    #print(w)
 
     points_1 = np.float32(points)
     points_2 = np.float32([[0,0],[h,0],[0,w],[h,w]])
