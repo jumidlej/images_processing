@@ -17,6 +17,7 @@
 * https://www.learnopencv.com/hough-transform-with-opencv-c-python/
 
 # Resize
+1. Interpolation
 
 # Thresholding
 

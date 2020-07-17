@@ -29,8 +29,8 @@ cv2.createTrackbar('max_red', 'Track Bars', 0, 255, do_nothing)
 # Reading image with OpenCV library
 # In this way image is opened already as numpy array
 # WARNING! OpenCV by default reads images in BGR format
-image = 'PCB_01_ilumin_06.jpg'
-image_BGR = cv2.imread('../imagens/'+image)
+image = 'PCB_01_ilumin_03.jpg'
+image_BGR = cv2.imread('../images/'+image)
 # Resizing image in order to use smaller windows
 # image_BGR = imutils.resize(image_BGR, width=800)
 

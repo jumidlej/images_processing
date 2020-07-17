@@ -7,9 +7,12 @@ import imutils
 # carrega imagem
 # recebe: diretório de imagem
 # retorna: imagem
-def load_image(image_file):
+def load_image(image_file, zoom=False):
     # ler imagem
     image = cv2.imread(image_file, cv2.IMREAD_COLOR)
+    if zoom==True:
+        res = cv2.resize(image,None,fx=2.2, fy=2.2, interpolation = cv2.INTER_CUBIC)
+        return res
     return image
 
 # binarização
@@ -180,9 +183,9 @@ def set_perspective(points, image):
 
     return dst
 
-def find_object(image_file):
+def find_object(image_file, zoom=False):
     # carregar imagem
-    image = load_image(image_file)
+    image = load_image(image_file, zoom)
 
     # binarização da imagem
     mask = thresholding(image)
@@ -200,22 +203,15 @@ def find_object(image_file):
     # top_left, bottom_left, top_right, bottom_right
     points = order_points(corners)
 
-    '''
-    # zoom
-    if points[0][0]-points[1][0] < 3000:
-        image_res = cv2.resize(image.copy(), None, fx=3100/points[0][0]-points[1][0], fy=1400/points[3][1]-points[1][1], interpolation = cv2.INTER_CUBIC)
-        perspective - set_perspective(image_res.copy(), points*())
-    '''
-
     perspective = set_perspective(points, image.copy())
     
     # perspective
-    cv2.namedWindow(image_file, cv2.WINDOW_NORMAL)
-    cv2.imshow(image_file, perspective)
+    cv2.namedWindow(image_file+str(zoom), cv2.WINDOW_NORMAL)
+    cv2.imshow(image_file+str(zoom), perspective)
 
     # cantos
-    cv2.namedWindow("cantos "+image_file, cv2.WINDOW_NORMAL)
-    cv2.imshow("cantos "+image_file, image_corners)
+    cv2.namedWindow("cantos "+image_file+str(zoom), cv2.WINDOW_NORMAL)
+    cv2.imshow("cantos "+image_file+str(zoom), image_corners)
 
 def main():
     print("Processamento de imagens de PCB.")
@@ -227,6 +223,8 @@ def main():
     images_file = ["../images/PCB_01_ilumin_03.jpg", "../images/PCB_01_ilumin_06.jpg"]
     for image_file in images_file:
         find_object(image_file)
+
+    find_object(images_file[1], True)
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
