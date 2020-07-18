@@ -227,6 +227,27 @@ def find_object(image_file):
     cv2.namedWindow("perspective "+image_file[10:], cv2.WINDOW_NORMAL)
     cv2.imshow("perspective "+image_file[10:], perspective)
 
+# divide a imagem em várias plaquinhas menores
+# recebe: imagem
+# retorna: imagem com linhas delimitando as plaquinhas
+def division(image):
+    #edge = np.zeros((image.shape[0], image.shape[1], image.shape[2]))
+    #edge = image
+    #edge[30:-30,30:-30,:] = (0, 0, 0)
+    dh_cut = int(image.shape[0]*0.04)
+    dw_cut = int(image.shape[1]*0.0172)
+
+    dh = int((image.shape[0] - 2*dh_cut)/2)
+    dw = int((image.shape[1] - 2*dw_cut)/10)
+
+    for i in range(3):
+        cv2.line(image, (0, i*dh+dh_cut), (image.shape[1], i*dh+dh_cut), (255,255,255), 1)
+
+    for i in range(11):
+        cv2.line(image, (i*dw+dw_cut, 0), (i*dw+dw_cut, image.shape[0]), (255,255,255), 1)
+    
+    return image
+
 # equalização
 # recebe: imagem da placa
 # retorna: imagem equalizada
@@ -238,8 +259,37 @@ def equalization(image):
 # normalização
 # recebe: imagem da placa
 # retorna: imagem normalizada
-def normalization(image):
-    pass
+def normalization(image, N=2):
+    h, w, d = image.shape
+    #print(h, w, d)
+    dstRGB = np.copy(image)
+    for i in range(d):
+        miu = np.log10(image[:, :, i].mean())
+        C_00 = miu * math.sqrt(h * w)
+        # C_00 = 0
+        vis0 = np.zeros((h, w), np.float32)
+        vis3 = np.zeros((h, w), np.float32)
+        vis0[:h, :w] = image[:h, :w, i]
+        vis0 += 1
+        c = 255 / np.log10(vis0.max())
+        #print(c)
+        vis0 = c * np.log10(vis0)
+        # vis0_1 = cv2.normalize(vis0, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+        # cv2.imshow("Log", vis0_1)
+        vis1 = cv2.dct(vis0)
+        # cv2.imshow("DCT", vis1)
+        for k in range(N):
+            for j in range(i + 1):
+                vis1[k - j, j] = C_00
+        # cv2.imshow("DCT Normalize", vis1)
+
+        vis2 = cv2.idct(vis1)
+        # vis2 = cv2.normalize(vis2, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+        # cv2.imshow("iDCT", vis2)
+        vis3 = (1.02 ** vis2) - 1
+        vis3 = cv2.normalize(vis3, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+        dstRGB[:h, :w, i] = vis3[:h, :w]
+    return dstRGB
 
 def main():
     print("Processamento de imagens de PCB.")
@@ -248,9 +298,31 @@ def main():
     print("OpenCV2: ", cv2.__version__)
     print("NumPy: ", np.__version__)
 
-    images_file = ["../images/PCB_01_ilumin_03.jpg", "../images/PCB_01_ilumin_06.jpg"]
+    #images_file = ["../images/PCB_01_ilumin_03.jpg", "../images/PCB_01_ilumin_06.jpg"]
+    #for image_file in images_file:
+    #    find_object(image_file)
+
+    images_file = ["../results/perspective_PCB_01_ilumin_03.jpg", "../results/perspective_PCB_01_ilumin_06.jpg"]
     for image_file in images_file:
-        find_object(image_file)
+        image = load_image(image_file)
+
+        divided = division(image.copy())
+        cv2.imwrite("../results/divided_"+image_file[23:], divided)
+        cv2.namedWindow("divided "+image_file[23:], cv2.WINDOW_NORMAL)
+        cv2.imshow("divided "+image_file[23:], divided)
+
+        '''
+        equalized = equalization(image)
+        cv2.imwrite("../results/equalized_"+image_file[23:], equalized)
+        cv2.namedWindow("equalized "+image_file[23:], cv2.WINDOW_NORMAL)
+        cv2.imshow("equalized "+image_file[23:], equalized)
+
+        normalized = normalization(image)
+        cv2.imwrite("../results/normalized_"+image_file[23:], normalized)
+        cv2.namedWindow("normalized "+image_file[23:], cv2.WINDOW_NORMAL)
+        cv2.imshow("normalized "+image_file[23:], normalized)
+        '''
+
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
