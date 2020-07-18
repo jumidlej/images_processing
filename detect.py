@@ -191,41 +191,41 @@ def set_perspective(points, image):
 def find_object(image_file):
     # carregar imagem
     image = load_image(image_file)
-    cv2.imwrite("../results/image.jpg", image)
-    cv2.namedWindow("image "+image_file, cv2.WINDOW_NORMAL)
-    cv2.imshow("image "+image_file, image)
+    cv2.imwrite("../results/image_"+image_file[10:], image)
+    cv2.namedWindow("image "+image_file[10:], cv2.WINDOW_NORMAL)
+    cv2.imshow("image "+image_file[10:], image)
 
     # binarização da imagem
     mask = thresholding(image)
-    cv2.imwrite("../results/thresholding.jpg", mask)
-    cv2.namedWindow("thresholding "+image_file, cv2.WINDOW_NORMAL)
-    cv2.imshow("thresholding "+image_file, mask)
+    cv2.imwrite("../results/thresholding_"+image_file[10:], mask)
+    cv2.namedWindow("thresholding "+image_file[10:], cv2.WINDOW_NORMAL)
+    cv2.imshow("thresholding "+image_file[10:], mask)
 
     # maior contorno (placa)
     contour, image_contour = max_area_contour(mask, image.copy())
-    cv2.imwrite("../results/contour.jpg", image_contour)
-    cv2.namedWindow("contour "+image_file, cv2.WINDOW_NORMAL)
-    cv2.imshow("contour "+image_file, image_contour)
+    cv2.imwrite("../results/contour_"+image_file[10:], image_contour)
+    cv2.namedWindow("contour "+image_file[10:], cv2.WINDOW_NORMAL)
+    cv2.imshow("contour "+image_file[10:], image_contour)
 
     # aproximação da forma
     approx_contour = hull(contour, image)
-    cv2.imwrite("../results/approx_contour.jpg", approx_contour)
-    cv2.namedWindow("approx. contour "+image_file, cv2.WINDOW_NORMAL)
-    cv2.imshow("approx. contour "+image_file, approx_contour)
+    cv2.imwrite("../results/approx_contour_"+image_file[10:], approx_contour)
+    cv2.namedWindow("approx. contour "+image_file[10:], cv2.WINDOW_NORMAL)
+    cv2.imshow("approx. contour "+image_file[10:], approx_contour)
 
     # detectar cantos
     centroids, corners, image_corners = get_corners(approx_contour, image.copy())
-    cv2.imwrite("../results/corners.jpg", image_corners)
-    cv2.namedWindow("corners "+image_file, cv2.WINDOW_NORMAL)
-    cv2.imshow("corners "+image_file, image_corners)
+    cv2.imwrite("../results/corners_"+image_file[10:], image_corners)
+    cv2.namedWindow("corners "+image_file[10:], cv2.WINDOW_NORMAL)
+    cv2.imshow("corners "+image_file[10:], image_corners)
 
     # perspective
     # top_left, bottom_left, top_right, bottom_right
     points = order_points(corners)
     perspective = set_perspective(points, image.copy())
-    cv2.imwrite("../results/perspective.jpg", perspective)
-    cv2.namedWindow("perspective "+image_file, cv2.WINDOW_NORMAL)
-    cv2.imshow("perspective "+image_file, perspective)
+    cv2.imwrite("../results/perspective_"+image_file[10:], perspective)
+    cv2.namedWindow("perspective "+image_file[10:], cv2.WINDOW_NORMAL)
+    cv2.imshow("perspective "+image_file[10:], perspective)
 
 # equalização
 # recebe: imagem da placa
