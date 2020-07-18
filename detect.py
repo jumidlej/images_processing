@@ -28,8 +28,8 @@ def thresholding(image):
 
 # contorno da placa
 # recebe: imagem binarizada
-# retorna: maior contorno da imagem
-def max_area_contour(mask):
+# retorna: maior contorno da imagem, imagem com o contorno
+def max_area_contour(mask, image):
     # contornos
     contours = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     contours = imutils.grab_contours(contours)
@@ -43,7 +43,8 @@ def max_area_contour(mask):
             cnt = contour
             max_area = cv2.contourArea(cnt)
 
-    return cnt
+    contour_image = cv2.drawContours(image, [cnt], -1, (255, 0, 0), 3)
+    return cnt, contour_image
 
 # aproximação do contorno da placa a um poligono
 # recebe: contorno, imagem
@@ -54,10 +55,10 @@ def approx_polygon(contour, image):
     approx = cv2.approxPolyDP(contour,epsilon,True)
     
     # desenhar contorno aproximado
-    contour_approx = np.zeros((image.shape[0], image.shape[1]), np.uint8)
-    cv2.drawContours(contour_approx, [approx], -1, (255, 0, 0), 3)
+    approx_contour = np.zeros((image.shape[0], image.shape[1]), np.uint8)
+    cv2.drawContours(approx_contour, [approx], -1, (255, 0, 0), 3)
     
-    return contour_approx
+    return approx_contour
 
 # aproximação do contorno da placa por preenchimento
 # recebe: contorno, imagem
@@ -66,10 +67,10 @@ def hull(contour, image):
     hull = cv2.convexHull(contour)
 
     # desenhar contorno aproximado
-    contour_approx = np.zeros((image.shape[0], image.shape[1]), np.uint8)
-    cv2.drawContours(contour_approx, [hull], -1, (255, 0, 0), 3)
+    approx_contour = np.zeros((image.shape[0], image.shape[1]), np.uint8)
+    cv2.drawContours(approx_contour, [hull], -1, (255, 0, 0), 3)
 
-    return contour_approx
+    return approx_contour
 
 # centroids
 # recebe: imagem binarizada
@@ -92,11 +93,11 @@ def get_centroids(corners):
 # cantos da imagem
 # recebe: contorno aproximado, imagem
 # retorna: pontos do centroid (harrisCorner), pontos dos cantos (subPix), imagem com os dois pontos
-def get_corners(contour_approx, image):
+def get_corners(approx_contour, image):
     gray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
-    corners = np.zeros((contour_approx.shape[0], contour_approx.shape[1]), np.uint8)
+    corners = np.zeros((approx_contour.shape[0], approx_contour.shape[1]), np.uint8)
 
-    dst = cv2.cornerHarris(contour_approx,20,3,0.04)
+    dst = cv2.cornerHarris(approx_contour,20,3,0.04)
     dst = cv2.dilate(dst, None) # pra que isso?
 
     # Threshold for an optimal value, it may vary depending on the image.
@@ -184,35 +185,61 @@ def set_perspective(points, image):
 
     return dst
 
+# detecta a placa
+# recebe: diretório da imagem
+# retorna: imagem contendo apenas a placa
 def find_object(image_file):
     # carregar imagem
     image = load_image(image_file)
+    cv2.imwrite("../results/image.jpg", image)
+    cv2.namedWindow("image "+image_file, cv2.WINDOW_NORMAL)
+    cv2.imshow("image "+image_file, image)
 
     # binarização da imagem
     mask = thresholding(image)
+    cv2.imwrite("../results/thresholding.jpg", mask)
+    cv2.namedWindow("thresholding "+image_file, cv2.WINDOW_NORMAL)
+    cv2.imshow("thresholding "+image_file, mask)
 
     # maior contorno (placa)
-    contour = max_area_contour(mask)
-    contour_image = cv2.drawContours(image.copy(), [contour], -1, (255, 0, 0), 3)
+    contour, image_contour = max_area_contour(mask, image.copy())
+    cv2.imwrite("../results/contour.jpg", image_contour)
+    cv2.namedWindow("contour "+image_file, cv2.WINDOW_NORMAL)
+    cv2.imshow("contour "+image_file, image_contour)
 
     # aproximação da forma
-    contour_approx = hull(contour, image)
+    approx_contour = hull(contour, image)
+    cv2.imwrite("../results/approx_contour.jpg", approx_contour)
+    cv2.namedWindow("approx. contour "+image_file, cv2.WINDOW_NORMAL)
+    cv2.imshow("approx. contour "+image_file, approx_contour)
 
     # detectar cantos
-    centroid, corners, image_corners = get_corners(contour_approx, image.copy())
+    centroids, corners, image_corners = get_corners(approx_contour, image.copy())
+    cv2.imwrite("../results/corners.jpg", image_corners)
+    cv2.namedWindow("corners "+image_file, cv2.WINDOW_NORMAL)
+    cv2.imshow("corners "+image_file, image_corners)
 
+    # perspective
     # top_left, bottom_left, top_right, bottom_right
     points = order_points(corners)
-
     perspective = set_perspective(points, image.copy())
-    
-    # perspective
-    cv2.namedWindow(image_file, cv2.WINDOW_NORMAL)
-    cv2.imshow(image_file, perspective)
+    cv2.imwrite("../results/perspective.jpg", perspective)
+    cv2.namedWindow("perspective "+image_file, cv2.WINDOW_NORMAL)
+    cv2.imshow("perspective "+image_file, perspective)
 
-    # cantos
-    cv2.namedWindow("cantos "+image_file, cv2.WINDOW_NORMAL)
-    cv2.imshow("cantos "+image_file, image_corners)
+# equalização
+# recebe: imagem da placa
+# retorna: imagem equalizada
+def equalization(image):
+    for i in range(len(image[0][0])):
+        image[:,:,i] = cv2.equalizeHist(image[:,:,i])
+    return image
+
+# normalização
+# recebe: imagem da placa
+# retorna: imagem normalizada
+def normalization(image):
+    pass
 
 def main():
     print("Processamento de imagens de PCB.")
