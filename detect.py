@@ -3,6 +3,7 @@ import numpy as np
 import math
 import sys
 import imutils
+from skimage.color import rgb2yiq
 
 # carrega imagem
 # recebe: diretório de imagem
@@ -234,17 +235,17 @@ def division(image):
     #edge = np.zeros((image.shape[0], image.shape[1], image.shape[2]))
     #edge = image
     #edge[30:-30,30:-30,:] = (0, 0, 0)
-    dh_cut = int(image.shape[0]*0.04)
-    dw_cut = int(image.shape[1]*0.0172)
+    dh_cut = image.shape[0]*0.04
+    dw_cut = image.shape[1]*0.017
 
-    dh = int((image.shape[0] - 2*dh_cut)/2)
-    dw = int((image.shape[1] - 2*dw_cut)/10)
+    dh = (image.shape[0] - 2*dh_cut)/2
+    dw = (image.shape[1] - 2*dw_cut)/10
 
     for i in range(3):
-        cv2.line(image, (0, i*dh+dh_cut), (image.shape[1], i*dh+dh_cut), (255,255,255), 1)
+        cv2.line(image, (0, int(i*dh+dh_cut)), (image.shape[1], int(i*dh+dh_cut)), (255,255,255), 1)
 
     for i in range(11):
-        cv2.line(image, (i*dw+dw_cut, 0), (i*dw+dw_cut, image.shape[0]), (255,255,255), 1)
+        cv2.line(image, (int(i*dw+dw_cut), 0), (int(i*dw+dw_cut), image.shape[0]), (255,255,255), 1)
     
     return image
 
@@ -252,12 +253,17 @@ def division(image):
 # recebe: imagem da placa
 # retorna: imagem equalizada
 def equalization(image):
-    for i in range(len(image[0][0])):
-        image[:,:,i] = cv2.equalizeHist(image[:,:,i])
+    #print(image.shape)
+    #image = image.astype(np.float32)
+    if len(image.shape) == 3:
+        for i in range(image.shape[2]):
+            image[:,:,i] = cv2.equalizeHist(image[:,:,i])
+    else:
+        image = cv2.equalizeHist(image)
     return image
 
 # normalização
-# recebe: imagem da placa
+# recebe: imagem da placa RGB
 # retorna: imagem normalizada
 def normalization(image, N=2):
     h, w, d = image.shape
@@ -291,6 +297,27 @@ def normalization(image, N=2):
         dstRGB[:h, :w, i] = vis3[:h, :w]
     return dstRGB
 
+def YIQ(image):
+    image_yiq = rgb2yiq(image)
+    image_yiq = np.around(image_yiq * 255, decimals=0)
+
+    #print(image_yiq)
+    #print(type(image_yiq))
+    image_yiq = image_yiq.astype(np.uint8)
+    #image_yiq = image_yiq.astype(np.float32)
+    return image_yiq
+
+def HSV(image):
+    image_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    #print(image_hsv)
+    #print(type(image_hsv))
+    return image_hsv
+
+def BW(image):
+    image_bw = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    #print(type(image_bw))
+    return image_bw
+
 def main():
     print("Processamento de imagens de PCB.")
     print("Processado com:")
@@ -304,25 +331,35 @@ def main():
 
     images_file = ["../results/perspective_PCB_01_ilumin_03.jpg", "../results/perspective_PCB_01_ilumin_06.jpg"]
     for image_file in images_file:
-        image = load_image(image_file)
+        rgb = load_image(image_file)
+        cv2.imwrite("../results/rgb_"+image_file[23:], rgb)
 
-        divided = division(image.copy())
-        cv2.imwrite("../results/divided_"+image_file[23:], divided)
-        cv2.namedWindow("divided "+image_file[23:], cv2.WINDOW_NORMAL)
-        cv2.imshow("divided "+image_file[23:], divided)
+        yiq = YIQ(rgb.copy())
+        cv2.imwrite("../results/yiq_"+image_file[23:], yiq[:,:,0])
 
-        '''
-        equalized = equalization(image)
-        cv2.imwrite("../results/equalized_"+image_file[23:], equalized)
-        cv2.namedWindow("equalized "+image_file[23:], cv2.WINDOW_NORMAL)
-        cv2.imshow("equalized "+image_file[23:], equalized)
+        hsv = HSV(rgb.copy())
+        cv2.imwrite("../results/hsv_"+image_file[23:], hsv)
 
-        normalized = normalization(image)
+        bw = BW(rgb.copy())
+        cv2.imwrite("../results/bw_"+image_file[23:], bw)
+
+        divided = division(rgb.copy())
+        cv2.imwrite("../results/divided_rgb_"+image_file[23:], divided)
+
+        equalized_rgb = equalization(rgb.copy())
+        cv2.imwrite("../results/equalized_rgb_"+image_file[23:], equalized_rgb)
+
+        equalized_bw = equalization(bw.copy())
+        cv2.imwrite("../results/equalized_bw_"+image_file[23:], equalized_bw)
+
+        equalized_yiq = equalization(yiq.copy())
+        cv2.imwrite("../results/equalized_yiq_"+image_file[23:], equalized_yiq[:, :, 0])
+
+        equalized_hsv = equalization(hsv.copy())
+        cv2.imwrite("../results/equalized_hsv_"+image_file[23:], equalized_hsv)
+
+        normalized = normalization(rgb.copy())
         cv2.imwrite("../results/normalized_"+image_file[23:], normalized)
-        cv2.namedWindow("normalized "+image_file[23:], cv2.WINDOW_NORMAL)
-        cv2.imshow("normalized "+image_file[23:], normalized)
-        '''
-
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
