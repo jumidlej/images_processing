@@ -193,40 +193,40 @@ def find_object(image_file):
     # carregar imagem
     image = load_image(image_file)
     cv2.imwrite("../results/image_"+image_file[10:], image)
-    cv2.namedWindow("image "+image_file[10:], cv2.WINDOW_NORMAL)
-    cv2.imshow("image "+image_file[10:], image)
+    #cv2.namedWindow("image "+image_file[10:], cv2.WINDOW_NORMAL)
+    #cv2.imshow("image "+image_file[10:], image)
 
     # binarização da imagem
     mask = thresholding(image)
     cv2.imwrite("../results/thresholding_"+image_file[10:], mask)
-    cv2.namedWindow("thresholding "+image_file[10:], cv2.WINDOW_NORMAL)
-    cv2.imshow("thresholding "+image_file[10:], mask)
+    #cv2.namedWindow("thresholding "+image_file[10:], cv2.WINDOW_NORMAL)
+    #cv2.imshow("thresholding "+image_file[10:], mask)
 
     # maior contorno (placa)
     contour, image_contour = max_area_contour(mask, image.copy())
     cv2.imwrite("../results/contour_"+image_file[10:], image_contour)
-    cv2.namedWindow("contour "+image_file[10:], cv2.WINDOW_NORMAL)
-    cv2.imshow("contour "+image_file[10:], image_contour)
+    #cv2.namedWindow("contour "+image_file[10:], cv2.WINDOW_NORMAL)
+    #cv2.imshow("contour "+image_file[10:], image_contour)
 
     # aproximação da forma
     approx_contour = hull(contour, image)
     cv2.imwrite("../results/approx_contour_"+image_file[10:], approx_contour)
-    cv2.namedWindow("approx. contour "+image_file[10:], cv2.WINDOW_NORMAL)
-    cv2.imshow("approx. contour "+image_file[10:], approx_contour)
+    #cv2.namedWindow("approx. contour "+image_file[10:], cv2.WINDOW_NORMAL)
+    #cv2.imshow("approx. contour "+image_file[10:], approx_contour)
 
     # detectar cantos
     centroids, corners, image_corners = get_corners(approx_contour, image.copy())
     cv2.imwrite("../results/corners_"+image_file[10:], image_corners)
-    cv2.namedWindow("corners "+image_file[10:], cv2.WINDOW_NORMAL)
-    cv2.imshow("corners "+image_file[10:], image_corners)
+    #cv2.namedWindow("corners "+image_file[10:], cv2.WINDOW_NORMAL)
+    #cv2.imshow("corners "+image_file[10:], image_corners)
 
     # perspective
     # top_left, bottom_left, top_right, bottom_right
     points = order_points(corners)
     perspective = set_perspective(points, image.copy())
     cv2.imwrite("../results/perspective_"+image_file[10:], perspective)
-    cv2.namedWindow("perspective "+image_file[10:], cv2.WINDOW_NORMAL)
-    cv2.imshow("perspective "+image_file[10:], perspective)
+    #cv2.namedWindow("perspective "+image_file[10:], cv2.WINDOW_NORMAL)
+    #cv2.imshow("perspective "+image_file[10:], perspective)
 
 # divide a imagem em várias plaquinhas menores
 # recebe: imagem
@@ -235,17 +235,29 @@ def division(image):
     #edge = np.zeros((image.shape[0], image.shape[1], image.shape[2]))
     #edge = image
     #edge[30:-30,30:-30,:] = (0, 0, 0)
+    #if len(image.shape) == 2:
+    #    image = np.reshape(image, (image.shape[0], image.shape[1], 1))
+
     dh_cut = image.shape[0]*0.04
     dw_cut = image.shape[1]*0.017
 
     dh = (image.shape[0] - 2*dh_cut)/2
     dw = (image.shape[1] - 2*dw_cut)/10
 
+    '''
+    if image.shape == 3:
+        image[40:-40,40:-40,:] = (0,0,0)
+    else:
+        image[40:-40,40:-40,:] = 0
+    '''
+
     for i in range(3):
         cv2.line(image, (0, int(i*dh+dh_cut)), (image.shape[1], int(i*dh+dh_cut)), (255,255,255), 1)
 
     for i in range(11):
         cv2.line(image, (int(i*dw+dw_cut), 0), (int(i*dw+dw_cut), image.shape[0]), (255,255,255), 1)
+
+    
     
     return image
 
@@ -254,18 +266,19 @@ def division(image):
 # retorna: imagem equalizada
 def equalization(image):
     #print(image.shape)
-    #image = image.astype(np.float32)
-    if len(image.shape) == 3:
-        for i in range(image.shape[2]):
-            image[:,:,i] = cv2.equalizeHist(image[:,:,i])
-    else:
-        image = cv2.equalizeHist(image)
+    if len(image.shape) == 2:
+        image = np.reshape(image, (image.shape[0], image.shape[1], 1))
+    for i in range(image.shape[2]):
+        image[:,:,i] = cv2.equalizeHist(image[:,:,i])
+    
     return image
 
 # normalização
 # recebe: imagem da placa RGB
 # retorna: imagem normalizada
-def normalization(image, N=2):
+def normalization(image, N=4):
+    if len(image.shape) == 2:
+        image = np.reshape(image, (image.shape[0], image.shape[1], 1))
     h, w, d = image.shape
     #print(h, w, d)
     dstRGB = np.copy(image)
@@ -318,6 +331,12 @@ def BW(image):
     #print(type(image_bw))
     return image_bw
 
+def thresh(image):
+    ret,th1 = cv2.threshold(image,140,255,cv2.THRESH_BINARY)
+    th2 = cv2.adaptiveThreshold(image,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,23,-40)
+    th3 = cv2.adaptiveThreshold(image,255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,23,-40)
+    return th1, th2, th3
+
 def main():
     print("Processamento de imagens de PCB.")
     print("Processado com:")
@@ -325,13 +344,18 @@ def main():
     print("OpenCV2: ", cv2.__version__)
     print("NumPy: ", np.__version__)
 
-    #images_file = ["../images/PCB_01_ilumin_03.jpg", "../images/PCB_01_ilumin_06.jpg"]
-    #for image_file in images_file:
-    #    find_object(image_file)
+    '''
+    images_file = ["../images/PCB_01_ilumin_03.jpg", "../images/PCB_01_ilumin_06.jpg"]
+    for image_file in images_file:
+        find_object(image_file)
+    '''
 
     images_file = ["../results/perspective_PCB_01_ilumin_03.jpg", "../results/perspective_PCB_01_ilumin_06.jpg"]
     for image_file in images_file:
+
+        # sistemas de cores
         rgb = load_image(image_file)
+        #rgb = rgb[10:-10,10:-10,:]
         cv2.imwrite("../results/rgb_"+image_file[23:], rgb)
 
         yiq = YIQ(rgb.copy())
@@ -343,9 +367,7 @@ def main():
         bw = BW(rgb.copy())
         cv2.imwrite("../results/bw_"+image_file[23:], bw)
 
-        divided = division(rgb.copy())
-        cv2.imwrite("../results/divided_rgb_"+image_file[23:], divided)
-
+        # equalização sobre as imagens originais
         equalized_rgb = equalization(rgb.copy())
         cv2.imwrite("../results/equalized_rgb_"+image_file[23:], equalized_rgb)
 
@@ -358,11 +380,74 @@ def main():
         equalized_hsv = equalization(hsv.copy())
         cv2.imwrite("../results/equalized_hsv_"+image_file[23:], equalized_hsv)
 
-        normalized = normalization(rgb.copy())
-        cv2.imwrite("../results/normalized_"+image_file[23:], normalized)
+        # normalização sobre as imagens originais
+        n = 3
+        normalized_rgb = normalization(rgb.copy(), 5)
+        cv2.imwrite("../results/normalized"+str(n)+"_rgb_"+image_file[23:], normalized_rgb)
+
+        normalized_bw = normalization(bw.copy())
+        cv2.imwrite("../results/normalized"+str(n)+"_bw_"+image_file[23:], normalized_bw)
+
+        normalized_yiq = normalization(yiq.copy())
+        cv2.imwrite("../results/normalized"+str(n)+"_yiq_"+image_file[23:], normalized_yiq[:, :, 0])
+
+        normalized_hsv = normalization(hsv.copy())
+        cv2.imwrite("../results/normalized"+str(n)+"_hsv_"+image_file[23:], normalized_hsv)
+
+        # equalização sobre imagens normalizadas
+        normalized_equalized_rgb = equalization(normalized_rgb.copy())
+        cv2.imwrite("../results/normalized"+str(n)+"_equalized_rgb_"+image_file[23:], normalized_equalized_rgb)
+
+        normalized_equalized_bw = equalization(normalized_bw.copy())
+        cv2.imwrite("../results/normalized"+str(n)+"_equalized_bw_"+image_file[23:], normalized_equalized_bw)
+
+        normalized_equalized_yiq = equalization(normalized_yiq.copy())
+        cv2.imwrite("../results/normalized"+str(n)+"_equalized_yiq_"+image_file[23:], normalized_equalized_yiq[:, :, 0])
+
+        normalized_equalized_hsv = equalization(normalized_hsv.copy())
+        cv2.imwrite("../results/normalized"+str(n)+"_equalized_hsv_"+image_file[23:], normalized_equalized_hsv)
+
+        # normalização sobre imagens equalizadas
+        equalized_normalized_rgb = normalization(equalized_rgb.copy())
+        cv2.imwrite("../results/equalized_normalized"+str(n)+"_rgb_"+image_file[23:], equalized_normalized_rgb)
+
+        equalized_normalized_bw = normalization(equalized_bw.copy())
+        cv2.imwrite("../results/equalized_normalized"+str(n)+"_bw_"+image_file[23:], equalized_normalized_bw)
+
+        equalized_normalized_yiq = normalization(equalized_yiq.copy())
+        cv2.imwrite("../results/equalized_normalized"+str(n)+"_yiq_"+image_file[23:], equalized_normalized_yiq[:, :, 0])
+
+        equalized_normalized_hsv = normalization(equalized_hsv.copy())
+        cv2.imwrite("../results/equalized_normalized"+str(n)+"_hsv_"+image_file[23:], equalized_normalized_hsv)
+
+    # divisão da imagem em plaquinhas menores
+    # divided_rgb = division(rgb.copy())
+    # cv2.imwrite("../results/divided_rgb_"+image_file[23:], divided_rgb)
+    '''
+    # segmentação
+    images_file = ["../results/equalized_bw_PCB_01_ilumin_03.jpg",
+                "../results/equalized_bw_PCB_01_ilumin_06.jpg",
+                "../results/equalized_yiq_PCB_01_ilumin_03.jpg",
+                "../results/equalized_yiq_PCB_01_ilumin_06.jpg",
+                "../results/equalized_normalized_bw_PCB_01_ilumin_03.jpg",
+                "../results/equalized_normalized_bw_PCB_01_ilumin_06.jpg",
+                "../results/equalized_normalized_yiq_PCB_01_ilumin_03.jpg",
+                "../results/equalized_normalized_yiq_PCB_01_ilumin_06.jpg",
+                "../results/normalized_equalized_bw_PCB_01_ilumin_03.jpg",
+                "../results/normalized_equalized_bw_PCB_01_ilumin_06.jpg",
+                "../results/normalized_equalized_yiq_PCB_01_ilumin_03.jpg",
+                "../results/normalized_equalized_yiq_PCB_01_ilumin_06.jpg"]
+    #print(images_file)
+    for image_file in images_file:
+        gray = cv2.imread(image_file, cv2.IMREAD_GRAYSCALE)
+        th_bin, th_gaussian, th_mean = thresh(gray)
+        cv2.imwrite("../results/th_bin_"+image_file[11:], th_bin)
+        cv2.imwrite("../results/th_gaussian_"+image_file[11:], th_gaussian)
+        cv2.imwrite("../results/th_mean_"+image_file[11:], th_mean)
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+    '''
     
     return 0
 
